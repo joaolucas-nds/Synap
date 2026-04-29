@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BASE — v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════
+   TOKENS
+════════════════════════════════════════════ */
+:root {
+  --bg:          #0f0f11;
+  --surface:     #18181c;
+  --surface2:    #202026;
+  --surface3:    #1c1c22;
+  --border:      #2e2e36;
+  --border-soft: #232329;
+  --text:        #e8e8f0;
+  --text-dim:    #7a7a8c;
+  --text-muted:  #44444f;
+  --accent:      #7c6af7;
+  --accent-soft: rgba(124,106,247,.14);
+  --accent-h:    #6a59e0;
+  --green:       #3ecf8e;
+  --red:         #f56565;
+  --yellow:      #f5c542;
+  --blue:        #5badf0;
+  --pink:        #e879a0;
+  --orange:      #f6973f;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --r:  8px;
+  --rs: 5px;
+  --sidebar-w: 270px;
+  --editor-w:  780px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+
+/* ════════════════════════════════════════════
+   SCROLLBAR
+════════════════════════════════════════════ */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ════════════════════════════════════════════
+   TOPBAR
+════════════════════════════════════════════ */
+.topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 18px; height: 50px; min-height: 50px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  z-index: 50; flex-shrink: 0;
+}
+.topbar-logo { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); letter-spacing: .05em; }
+.topbar-sep  { width: 1px; height: 18px; background: var(--border); }
+.topbar-count { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.topbar-sp { flex: 1; }
+
+/* ════════════════════════════════════════════
+   BUTTONS
+════════════════════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: var(--rs);
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  cursor: pointer; border: none; transition: all .14s; white-space: nowrap; flex-shrink: 0;
+}
+.btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+.btn-primary  { background: var(--accent); color: #fff; }
+.btn-primary:hover  { background: var(--accent-h); }
+.btn-ghost    { background: transparent; color: var(--text-dim); }
+.btn-ghost:hover    { background: var(--surface2); color: var(--text); }
+.btn-outline  { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+.btn-outline:hover  { border-color: var(--text-dim); color: var(--text); }
+.btn-danger   { background: transparent; color: var(--red); border: 1px solid var(--red); }
+.btn-danger:hover   { background: rgba(245,101,101,.1); }
+.btn-xs { padding: 3px 7px; font-size: 11px; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: var(--rs);
+  background: none; border: none; cursor: pointer; color: var(--text-muted);
+  transition: all .12s; flex-shrink: 0;
+}
+.icon-btn:hover { background: var(--surface2); color: var(--text); }
+.icon-btn svg { width: 13px; height: 13px; }
+
+/* ════════════════════════════════════════════
+   BODY LAYOUT
+════════════════════════════════════════════ */
+.body-layout { display: flex; flex: 1; min-height: 0; position: relative; }
+
+/* ════════════════════════════════════════════
+   PROPERTIES SIDEBAR
+════════════════════════════════════════════ */
+.props-sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transition: width .22s ease, opacity .18s;
+  overflow: hidden;
+}
+.props-sidebar.collapsed { width: 0; opacity: 0; pointer-events: none; }
+
+.psb-head {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 14px 10px; border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+.psb-title { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .09em; flex: 1; }
+.psb-search-wrap { padding: 8px 10px; flex-shrink: 0; }
+.psb-search {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--rs); color: var(--text); font-family: var(--sans); font-size: 12px;
+  padding: 5px 9px; outline: none; transition: border-color .14s;
+}
+.psb-search::placeholder { color: var(--text-muted); }
+.psb-search:focus { border-color: var(--accent); }
+
+.psb-list { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
+
+/* Property item */
+.prop-item { background: var(--surface2); border: 1px solid var(--border-soft); border-radius: var(--r); padding: 10px; margin-bottom: 8px; }
+.prop-item-head { display: flex; align-items: center; gap: 5px; margin-bottom: 7px; }
+.prop-name-display { font-weight: 500; font-size: 13px; flex: 1; cursor: default; }
+.prop-name-input {
+  flex: 1; background: var(--surface3); border: 1px solid var(--accent);
+  border-radius: var(--rs); color: var(--text); font-family: var(--sans); font-size: 13px;
+  font-weight: 500; padding: 2px 6px; outline: none; display: none;
+}
+.prop-opts-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+.prop-opt-chip {
+  display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px;
+  border-radius: 20px; font-size: 11px; font-weight: 500; background: var(--surface3); color: var(--text-dim);
+}
+.opt-edit-input {
+  background: none; border: none; border-bottom: 1px solid var(--accent);
+  color: var(--text); font-family: var(--sans); font-size: 11px; font-weight: 500;
+  width: 70px; outline: none; padding: 0 2px;
+}
+.chip-del-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 10px; line-height: 1; padding: 0 1px; }
+.chip-del-btn:hover { color: var(--red); }
+.chip-edit-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 9px; padding: 0 1px; }
+.chip-edit-btn:hover { color: var(--accent); }
+.prop-add-opt { display: flex; gap: 5px; margin-top: 4px; }
+.prop-opt-input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--rs);
+  color: var(--text); font-family: var(--sans); font-size: 11px; padding: 3px 7px; outline: none;
+}
+.prop-opt-input::placeholder { color: var(--text-muted); }
+.prop-opt-input:focus { border-color: var(--accent); }
+.psb-add-prop {
+  margin: 2px 8px 8px;
+  display: flex; align-items: center; gap: 5px; padding: 6px 8px; cursor: pointer;
+  font-size: 12px; color: var(--text-muted); border-radius: var(--rs); transition: all .1s; border: none; background: none; font-family: var(--sans); width: calc(100% - 16px);
+}
+.psb-add-prop:hover { color: var(--text-dim); background: var(--surface2); }
+
+/* ════════════════════════════════════════════
+   MAIN CONTENT
+════════════════════════════════════════════ */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+/* Toolbar */
+.toolbar { display: flex; flex-direction: column; border-bottom: 1px solid var(--border-soft); flex-shrink: 0; }
+.tb-row { display: flex; align-items: center; gap: 8px; padding: 8px 16px; }
+.search-wrap { position: relative; flex: 1; max-width: 280px; }
+.search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 12px; height: 12px; pointer-events: none; }
+.search-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--rs);
+  color: var(--text); font-family: var(--sans); font-size: 13px; padding: 5px 9px 5px 28px;
+  outline: none; transition: border-color .14s;
+}
+.search-input::placeholder { color: var(--text-muted); }
+.search-input:focus { border-color: var(--accent); }
+
+/* Date filter row */
+.date-row { padding: 0 16px 8px; display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
+.date-row.open { display: flex; }
+.date-label { font-size: 11px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; }
+.date-input {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--rs);
+  color: var(--text-dim); font-family: var(--mono); font-size: 11px;
+  padding: 4px 7px; outline: none; color-scheme: dark; cursor: pointer;
+}
+.date-input:focus { border-color: var(--accent); color: var(--text); }
+.date-field-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--rs); overflow: hidden; }
+.dft-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; padding: 4px 9px; cursor: pointer; font-family: var(--sans); transition: all .12s; }
+.dft-btn.active { background: var(--accent-soft); color: var(--accent); }
+
+/* Filter info */
+.filter-info { font-size: 11px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; }
+
+/* ════════════════════════════════════════════
+   TABLE
+════════════════════════════════════════════ */
+.table-wrap { flex: 1; overflow: auto; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+.tbl thead { position: sticky; top: 0; z-index: 10; }
+.tbl th {
+  padding: 9px 14px; text-align: left; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .08em; white-space: nowrap;
+  user-select: none;
+}
+.tbl th.sortable { cursor: pointer; }
+.tbl th.sortable:hover { color: var(--text-dim); }
+.tbl th.sorted    { color: var(--accent); }
+.sort-arrow { margin-left: 4px; opacity: .7; }
+.tbl tbody tr { border-bottom: 1px solid var(--border-soft); transition: background .09s; }
+.tbl tbody tr:hover td { background: var(--surface); }
+.tbl tbody tr.row-sel td { background: var(--accent-soft); }
+.tbl td { padding: 9px 14px; vertical-align: middle; }
+.td-cb  { width: 36px; }
+.td-title { font-weight: 500; color: var(--text); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-props { max-width: 220px; overflow: hidden; white-space: nowrap; }
+.td-date  { font-family: var(--mono); font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.td-blk   { font-family: var(--mono); font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.prop-pill { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 20px; font-size: 11px; font-weight: 500; margin-right: 3px; }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 80px 20px; color: var(--text-muted); }
+.empty-state svg { width: 34px; height: 34px; opacity: .25; }
+.empty-state p { font-size: 14px; }
+
+/* ════════════════════════════════════════════
+   MASS ACTION BAR
+════════════════════════════════════════════ */
+.mass-bar {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 30px; padding: 8px 18px; display: none; gap: 12px; align-items: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,.6); z-index: 200;
+}
+.mass-bar.visible { display: flex; }
+.mass-cnt { font-size: 12px; font-weight: 500; color: var(--text-dim); white-space: nowrap; }
+.mass-btn { background: rgba(255,255,255,.07); border: none; color: var(--text); padding: 4px 11px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 500; font-family: var(--sans); transition: .14s; }
+.mass-btn:hover { background: rgba(255,255,255,.14); }
+.mass-btn.danger { color: var(--red); }
+
+/* ════════════════════════════════════════════
+   EDITOR PANEL (slides from right)
+════════════════════════════════════════════ */
+.editor-panel {
+  position: fixed; top: 0; right: -820px; width: min(var(--editor-w), 92vw);
+  height: 100vh; background: var(--surface); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; z-index: 300;
+  transition: right .26s cubic-bezier(.4,0,.2,1);
+  box-shadow: -12px 0 40px rgba(0,0,0,.55);
+}
+.editor-panel.open { right: 0; }
+.ep-head {
+  display: flex; align-items: center; gap: 7px; padding: 11px 16px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.ep-title { font-size: 12px; font-weight: 600; color: var(--text-dim); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ep-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.ep-foot { display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+
+/* Editor overlay for click-outside */
+.editor-overlay { position: fixed; inset: 0; z-index: 290; display: none; }
+.editor-overlay.visible { display: block; }
+
+/* Editor fields */
+.field-lbl {
+  font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .08em; margin-bottom: 5px;
+}
+.fi {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--rs);
+  color: var(--text); font-family: var(--sans); padding: 7px 10px; outline: none;
+  transition: border-color .14s; resize: none;
+}
+.fi::placeholder { color: var(--text-muted); }
+.fi:focus { border-color: var(--accent); }
+.fi-title { font-size: 15px; font-weight: 600; }
+.fi-desc  { font-size: 13px; line-height: 1.65; min-height: 56px; }
+.fi-ta    { font-size: 13px; line-height: 1.7; resize: vertical; min-height: 90px; }
+.meta-row { display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+/* Prop selector in editor */
+.ep-prop-section { margin-bottom: 2px; }
+.ep-prop-opts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.ep-opt {
+  padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  cursor: pointer; border: 2px solid transparent; transition: all .1s;
+  opacity: .48;
+}
+.ep-opt:hover { opacity: .75; }
+.ep-opt.sel { opacity: 1; border-color: rgba(255,255,255,.25); }
+
+/* ════════════════════════════════════════════
+   BLOCKS
+════════════════════════════════════════════ */
+.blocks-section { display: flex; flex-direction: column; gap: 10px; }
+.block-item { background: var(--surface3); border: 1px solid var(--border-soft); border-radius: var(--r); }
+.block-item.collapsed .block-body { display: none; }
+
+.block-head {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 8px; background: rgba(0,0,0,.15);
+  border-bottom: 1px solid var(--border-soft);
+  border-radius: var(--r) var(--r) 0 0;
+}
+.block-num {
+  font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+  min-width: 18px; flex-shrink: 0; user-select: none;
+}
+.block-sub-input {
+  flex: 1; background: transparent; border: none; border-bottom: 1px solid transparent;
+  color: var(--text); font-family: var(--sans); font-size: 13px; font-weight: 500;
+  padding: 1px 4px; outline: none; transition: border-color .14s; min-width: 0;
+}
+.block-sub-input:focus { border-bottom-color: var(--border); }
+.block-sub-input::placeholder { color: var(--text-muted); font-weight: 400; }
+
+/* Version control */
+.block-ver { display: flex; align-items: center; gap: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--rs); overflow: hidden; flex-shrink: 0; }
+.ver-btn { background: none; border: none; cursor: pointer; color: var(--text-dim); padding: 0 7px; height: 26px; font-size: 13px; line-height: 1; transition: .12s; }
+.ver-btn:hover { background: var(--surface3); color: var(--text); }
+.ver-num { background: transparent; border: none; color: var(--text); font-family: var(--mono); font-size: 12px; text-align: center; width: 36px; height: 26px; padding: 0; outline: none; }
+.ver-num::-webkit-inner-spin-button, .ver-num::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* Move controls */
+.block-move { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+.move-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); width: 18px; height: 13px; display: flex; align-items: center; justify-content: center; transition: color .1s; }
+.move-btn:hover { color: var(--text); }
+.move-btn:disabled { opacity: .2; pointer-events: none; }
+.move-btn svg { width: 9px; height: 9px; }
+
+/* Jump-to position */
+.pos-input {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--rs);
+  color: var(--text-dim); font-family: var(--mono); font-size: 10px; text-align: center;
+  width: 28px; height: 22px; padding: 0 2px; outline: none;
+}
+.pos-input:focus { border-color: var(--accent); color: var(--text); }
+.pos-input::-webkit-inner-spin-button, .pos-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.block-actions { display: flex; gap: 1px; flex-shrink: 0; }
+.blk-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px 5px; border-radius: 3px; transition: .1s; display: flex; align-items: center; }
+.blk-btn:hover { color: var(--text); background: var(--surface2); }
+.blk-btn svg { width: 12px; height: 12px; }
+.blk-btn.danger:hover { color: var(--red); }
+
+/* Suggestion dropdown */
+.sub-wrap { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sug-drop {
+  position: absolute; top: calc(100% + 5px); left: 0; min-width: 200px; max-width: 280px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--rs);
+  z-index: 400; box-shadow: 0 8px 28px rgba(0,0,0,.55); display: none; max-height: 240px; overflow-y: auto;
+}
+.sug-drop.open { display: block; }
+.sug-sec { padding: 3px 0; }
+.sug-sec + .sug-sec { border-top: 1px solid var(--border-soft); }
+.sug-lbl { font-family: var(--mono); font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; padding: 5px 11px 2px; }
+.sug-item { padding: 6px 12px; font-size: 12px; color: var(--text-dim); cursor: pointer; transition: background .09s; }
+.sug-item:hover { background: var(--surface2); color: var(--text); }
+.sug-empty { padding: 10px 12px; font-size: 12px; color: var(--text-muted); }
+
+/* Version adjuster hint */
+.ver-hint {
+  font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+  padding: 2px 4px; display: none; white-space: nowrap;
+}
+.ver-hint.show { display: block; }
+
+.block-body { padding: 8px; }
+
+/* Add block button */
+.add-block-btn {
+  display: flex; align-items: center; gap: 7px; padding: 9px 11px;
+  cursor: pointer; font-size: 12px; color: var(--text-muted);
+  border: 1px dashed var(--border); border-radius: var(--rs);
+  width: 100%; background: none; font-family: var(--sans); transition: .13s;
+}
+.add-block-btn:hover { border-color: var(--text-dim); color: var(--text-dim); background: var(--surface2); }
+
+/* ════════════════════════════════════════════
+   MODALS
+════════════════════════════════════════════ */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.65);
+  display: flex; align-items: center; justify-content: center; z-index: 600;
+  opacity: 0; pointer-events: none; transition: opacity .14s;
+}
+.modal-bg.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  width: 380px; max-width: 92vw; padding: 22px; display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.55); transform: translateY(8px); transition: transform .14s;
+}
+.modal-bg.open .modal { transform: none; }
+.modal h3 { font-size: 15px; font-weight: 600; }
+.modal p  { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.modal-foot { display: flex; gap: 7px; justify-content: flex-end; }
+
+/* Export options */
+.exp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.exp-card {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--rs);
+  padding: 13px; cursor: pointer; transition: all .14s; display: flex; flex-direction: column; gap: 3px;
+}
+.exp-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+.exp-card-name { font-weight: 600; font-size: 13px; }
+.exp-card-desc { font-size: 11px; color: var(--text-dim); }
+
+/* ════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 22px; right: 22px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--rs);
+  padding: 9px 15px; font-size: 13px; color: var(--text);
+  z-index: 700; display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  transform: translateY(56px); opacity: 0; transition: all .2s; pointer-events: none;
+}
+.toast.show { transform: none; opacity: 1; }
+.toast-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+/* ════════════════════════════════════════════
+   COLORS PALETTE (for option chips)
+════════════════════════════════════════════ */
+.color-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: .1s; flex-shrink: 0; }
+.color-dot.sel { border-color: #fff; transform: scale(1.18); }
+.color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<!-- ════════ TOPBAR ════════ -->
+<div class="topbar">
+  <button class="icon-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Propriedades (P)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+  </button>
+  <span class="topbar-logo">◈ BASE</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-count" id="topbar-count">0 entradas</span>
+  <div class="topbar-sp"></div>
+  <button class="btn btn-ghost" onclick="openImport()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Importar
+  </button>
+  <button class="btn btn-outline" onclick="openExportModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Exportar tudo
+  </button>
+  <button class="btn btn-primary" onclick="openEditor()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nova entrada
+  </button>
+</div>
+
+<!-- ════════ BODY ════════ -->
+<div class="body-layout">
+
+  <!-- PROPERTIES SIDEBAR -->
+  <aside class="props-sidebar" id="propsSidebar">
+    <div class="psb-head">
+      <span class="psb-title">Propriedades</span>
+      <button class="icon-btn" onclick="toggleSidebar()" title="Fechar (P)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="psb-search-wrap">
+      <input class="psb-search" type="text" placeholder="Buscar propriedade ou opção..." id="psbSearch" oninput="renderSidebar()">
+    </div>
+    <div class="psb-list" id="propsList"></div>
+    <button class="psb-add-prop" onclick="promptAddProperty()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nova propriedade
+    </button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="tb-row">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" placeholder="Pesquisar..." id="searchInput" oninput="renderTable()">
+        </div>
+        <button class="btn btn-ghost btn-xs" id="dateToggleBtn" onclick="toggleDateRow()" title="Filtrar por data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Datas
+        </button>
+        <div style="flex:1"></div>
+        <span class="filter-info" id="filterInfo"></span>
+      </div>
+      <!-- Date filter row -->
+      <div class="date-row" id="dateRow">
+        <span class="date-label">Campo:</span>
+        <div class="date-field-toggle">
+          <button class="dft-btn active" id="dfCriado" onclick="setDateField('createdAt')">Criado</button>
+          <button class="dft-btn" id="dfAlterado" onclick="setDateField('updatedAt')">Alterado</button>
+        </div>
+        <span class="date-label">De:</span>
+        <input type="date" class="date-input" id="dateFrom" onchange="renderTable()">
+        <span class="date-label">Até:</span>
+        <input type="date" class="date-input" id="dateTo" onchange="renderTable()">
+        <button class="btn btn-ghost btn-xs" onclick="clearDateFilter()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table class="tbl" id="mainTable">
+        <thead>
+          <tr id="tableHead"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </main>
+</div><!-- /body-layout -->
+
+<!-- MASS ACTION BAR -->
+<div class="mass-bar" id="massBar">
+  <span class="mass-cnt" id="massCnt">0 selecionados</span>
+  <button class="mass-btn" onclick="massExportJSON()">Exportar JSON</button>
+  <button class="mass-btn" onclick="massExportMD()">Exportar MD</button>
+  <button class="mass-btn danger" onclick="massDelete()">Excluir</button>
+</div>
+
+<!-- EDITOR OVERLAY -->
+<div class="editor-overlay" id="editorOverlay" onclick="requestCloseEditor()"></div>
+
+<!-- EDITOR PANEL -->
+<div class="editor-panel" id="editorPanel">
+  <div class="ep-head">
+    <span class="ep-title" id="epTitle">Nova entrada</span>
+    <button class="btn btn-primary btn-xs" onclick="saveEntry()" title="Ctrl+S">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Salvar
+    </button>
+    <button class="btn btn-ghost btn-xs" onclick="exportCurrentMD()" title="Exportar esta entrada como Markdown">MD</button>
+    <button class="btn btn-ghost btn-xs" onclick="exportCurrentJSON()" title="Exportar esta entrada como JSON">JSON</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-danger btn-xs" id="epDeleteBtn" onclick="deleteCurrentEntry()" style="display:none">Excluir</button>
+    <button class="icon-btn" onclick="requestCloseEditor()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="ep-body" id="epBody">
+    <!-- Título -->
+    <div>
+      <div class="field-lbl">Título</div>
+      <input class="fi fi-title" type="text" id="epTitleInput" placeholder="Título da entrada..." autocomplete="off">
+    </div>
+    <!-- Descrição/Resumo -->
+    <div>
+      <div class="field-lbl" style="display:flex;align-items:center;gap:6px">
+        Descrição / Resumo
+        <span style="font-size:10px;opacity:.5;font-weight:400">opcional</span>
+      </div>
+      <textarea class="fi fi-desc" id="epDesc" placeholder="Resumo rápido para identificação (não é obrigatório)..."></textarea>
+    </div>
+    <!-- Propriedades dinâmicas -->
+    <div id="epPropsArea"></div>
+    <!-- Blocos -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="field-lbl" style="margin-bottom:0">Blocos de Conteúdo</div>
+        <span class="filter-info" id="blockCount"></span>
+      </div>
+      <div class="blocks-section" id="blocksContainer"></div>
+      <button class="add-block-btn" onclick="addBlock()" style="margin-top:4px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar bloco de conteúdo
+      </button>
+    </div>
+    <!-- Meta -->
+    <div class="meta-row" id="epMeta"></div>
+  </div>
+
+  <div class="ep-foot">
+    <button class="btn btn-primary" onclick="saveEntry()">Salvar</button>
+    <button class="btn btn-ghost" onclick="requestCloseEditor()">Fechar</button>
+  </div>
+</div>
+
+<!-- ════════ MODALS ════════ -->
+
+<!-- Unsaved Changes Modal -->
+<div class="modal-bg" id="unsavedModal">
+  <div class="modal">
+    <h3>Alterações não salvas</h3>
+    <p>Você fez alterações nesta entrada. O que deseja fazer?</p>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeUnsavedModal()">Continuar editando</button>
+      <button class="btn btn-danger" onclick="discardAndClose()">Descartar</button>
+      <button class="btn btn-primary" onclick="saveAndClose()">Salvar e fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-bg" id="exportModal">
+  <div class="modal">
+    <h3>Exportar todos os dados</h3>
+    <p>Todas as entradas serão incluídas no arquivo exportado.</p>
+    <div class="exp-grid">
+      <div class="exp-card" onclick="exportAllJSON()">
+        <div class="exp-card-name">📦 JSON</div>
+        <div class="exp-card-desc">Dados completos. Ideal para reimportar.</div>
+      </div>
+      <div class="exp-card" onclick="exportAllMD()">
+        <div class="exp-card-name">📝 Markdown</div>
+        <div class="exp-card-desc">Documento único com todos os blocos.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('exportModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Property Modal -->
+<div class="modal-bg" id="addPropModal">
+  <div class="modal">
+    <h3 id="addPropModalTitle">Nova propriedade</h3>
+    <div>
+      <div class="field-lbl">Nome</div>
+      <input class="fi" type="text" id="addPropName" placeholder="ex: Status, Fonte, Plataforma..."
+        style="font-size:13px" onkeydown="if(event.key==='Enter')confirmAddProp()">
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('addPropModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmAddProp()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toastMsg"></span></div>
+
+<!-- ════════════════════════════════════════════
+     SCRIPT
+════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ──────────────────────────────
+   CONSTANTS & COLOURS
+────────────────────────────── */
+const STORAGE_KEY = 'base_v4';
+const COLORS = [
+  { id:'violet', hex:'#7c6af7', bg:'rgba(124,106,247,.18)', text:'#a99ff7' },
+  { id:'green',  hex:'#3ecf8e', bg:'rgba(62,207,142,.15)',  text:'#5de0a8' },
+  { id:'blue',   hex:'#5badf0', bg:'rgba(91,173,240,.15)',  text:'#82c4f5' },
+  { id:'yellow', hex:'#f5c542', bg:'rgba(245,197,66,.15)',  text:'#f7d06a' },
+  { id:'pink',   hex:'#e879a0', bg:'rgba(232,121,160,.15)', text:'#f09dbf' },
+  { id:'orange', hex:'#f6973f', bg:'rgba(246,151,63,.15)',  text:'#f8b36e' },
+  { id:'red',    hex:'#f56565', bg:'rgba(245,101,101,.15)', text:'#f78e8e' },
+  { id:'slate',  hex:'#8899bb', bg:'rgba(136,153,187,.15)', text:'#aab7cc' },
+];
+const AI_HINTS = ['Prompt','Claude','Gemini','ChatGPT','GPT-4','Grok','Copilot','DeepSeek','Mistral','Perplexity'];
+
+/* ──────────────────────────────
+   STATE
+────────────────────────────── */
+let db = { properties: [], entries: [] };
+let sidebarOpen = true;
+let sortCol = 'updatedAt', sortDir = 'desc';
+let dateField = 'createdAt';
+let selectedIds = new Set();
+let currentId = null;          // editing entry id
+let editBlocks = [];           // working copy of blocks in editor
+let editProps = {};            // { propId: [optId, ...] }
+let dirtySnapshot = null;      // JSON snapshot to detect unsaved changes
+
+/* ──────────────────────────────
+   PERSISTENCE & MIGRATION
+────────────────────────────── */
+function loadDB() {
+  const keys = [STORAGE_KEY, 'base_notas_v3', 'base_notas_v2', 'nexus_db_v4'];
+  for (const k of keys) {
+    try {
+      const raw = localStorage.getItem(k);
+      if (!raw) continue;
+      let d = JSON.parse(raw);
+
+      // Migrate old formats
+      if (d.categories && !d.properties) {
+        // base_notas_v2 / v3 format
+        d.properties = (d.categories || []).map(c => ({
+          id: c.id, name: c.name,
+          options: []
+        }));
+        d.entries = (d.entries || []).map(e => {
+          const blocks = e.blocks || [{ id: uid(), subtitle: '', version: 1, content: e.content || '' }];
+          const pv = {};
+          if (e.tags && e.tags.length) pv[e.tags[0]] = (e.tags || []);
+          return { id: e.id, title: e.title || '', description: '', propertyValues: pv,
+                   blocks: blocks.map(b => ({...b, version: b.version || 1})),
+                   createdAt: e.createdAt, updatedAt: e.updatedAt };
+        });
+        delete d.categories; delete d.customProps;
+      } else if (d.properties && d.entries) {
+        // Normalize options to {id, name} if they are strings (Gemini format)
+        d.properties = d.properties.map(p => ({
+          ...p,
+          options: (p.options || []).map(o =>
+            typeof o === 'string' ? { id: uid(), name: o, colorId: randColor() } : o
+          )
+        }));
+        d.entries = d.entries.map(e => ({
+          ...e,
+          description: e.description || '',
+          propertyValues: e.propertyValues || {},
+          blocks: (e.blocks || []).map(b => ({
+            id: b.id || uid(), subtitle: b.subtitle || '',
+            version: b.version || 1, content: b.content || ''
+          }))
+        }));
+      }
+
+      if (!d.properties) d.properties = [];
+      if (!d.entries)    d.entries    = [];
+      showToast(k !== STORAGE_KEY ? 'Dados anteriores migrados ✓' : '');
+      return d;
+    } catch(e) { /* continue */ }
+  }
+  return {
+    properties: [
+      { id:'p-tags',   name:'Tags',        options:[
+          { id:'o1', name:'Ideia',    colorId:'yellow' },
+          { id:'o2', name:'Pesquisa', colorId:'blue'   },
+          { id:'o3', name:'Geral',    colorId:'slate'  },
+        ]},
+      { id:'p-ia', name:'IA Utilizada', options:[
+          { id:'o4', name:'Claude',   colorId:'violet' },
+          { id:'o5', name:'Gemini',   colorId:'green'  },
+          { id:'o6', name:'ChatGPT',  colorId:'orange' },
+        ]},
+    ],
+    entries: []
+  };
+}
+
+function saveDB() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+
+/* ──────────────────────────────
+   UTILS
+────────────────────────────── */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function randColor() { return COLORS[Math.floor(Math.random()*COLORS.length)].id; }
+function getColor(id) { return COLORS.find(c=>c.id===id) || COLORS[7]; }
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'})
+        +' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function dateSlug() { return new Date().toISOString().slice(0,10); }
+function dl(content, name, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type}));
+  a.download = name; a.click();
+  URL.revokeObjectURL(a.href);
+}
+let _toast;
+function showToast(msg) {
+  if (!msg) return;
+  document.getElementById('toastMsg').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(_toast);
+  _toast = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ──────────────────────────────
+   SIDEBAR TOGGLE
+────────────────────────────── */
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('propsSidebar').classList.toggle('collapsed', !sidebarOpen);
+}
+
+/* ──────────────────────────────
+   RENDER SIDEBAR (Properties)
+────────────────────────────── */
+function renderSidebar() {
+  const q = (document.getElementById('psbSearch').value || '').toLowerCase();
+  const list = document.getElementById('propsList');
+  list.innerHTML = '';
+
+  db.properties.forEach(prop => {
+    const nameMatch = !q || prop.name.toLowerCase().includes(q);
+    const matchingOpts = prop.options.filter(o => !q || nameMatch || o.name.toLowerCase().includes(q));
+    if (q && !nameMatch && matchingOpts.length === 0) return;
+    const showOpts = q ? matchingOpts : prop.options;
+
+    const div = document.createElement('div');
+    div.className = 'prop-item';
+    div.dataset.pid = prop.id;
+
+    // Options HTML
+    const optsHtml = showOpts.map(opt => {
+      const col = getColor(opt.colorId);
+      return `<span class="prop-opt-chip" data-oid="${opt.id}" style="background:${col.bg};color:${col.text}">
+        <span class="prop-opt-label" ondblclick="inlineEditOpt('${prop.id}','${opt.id}',this)" title="Clique duplo para renomear">${esc(opt.name)}</span>
+        <button class="chip-del-btn" onclick="removeOption('${prop.id}','${opt.id}')" title="Remover opção">✕</button>
+      </span>`;
+    }).join('');
+
+    div.innerHTML = `
+      <div class="prop-item-head">
+        <span class="prop-name-display" ondblclick="inlineEditPropName('${prop.id}',this)" title="Clique duplo para renomear">${esc(prop.name)}</span>
+        <input class="prop-name-input" type="text" data-pid="${prop.id}" onblur="savePropName('${prop.id}',this)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.style.display='none';this.previousElementSibling.style.display='';}">
+        <button class="icon-btn" style="width:22px;height:22px" onclick="deleteProperty('${prop.id}')" title="Excluir propriedade">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+      <div class="prop-opts-wrap">${optsHtml}</div>
+      <div class="prop-add-opt">
+        <input class="prop-opt-input" type="text" placeholder="+ opção (Enter)"
+          onkeydown="if(event.key==='Enter')addOptionToSidebar('${prop.id}',this)">
+        <button class="btn btn-ghost btn-xs" onclick="addOptionToSidebar('${prop.id}',this.previousElementSibling)">+</button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function inlineEditPropName(propId, el) {
+  const input = el.nextElementSibling;
+  input.value = el.textContent;
+  el.style.display = 'none';
+  input.style.display = 'block';
+  input.focus(); input.select();
+}
+
+function savePropName(propId, input) {
+  const name = input.value.trim();
+  const display = input.previousElementSibling;
+  if (name) {
+    const p = db.properties.find(x => x.id === propId);
+    if (p) { p.name = name; saveDB(); }
+    display.textContent = name;
+  }
+  input.style.display = 'none';
+  display.style.display = '';
+  renderSidebar();
+  if (currentId !== null) renderEditorProps();
+}
+
+function inlineEditOpt(propId, optId, spanEl) {
+  const chip = spanEl.parentElement;
+  const old = spanEl.textContent;
+  const inp = document.createElement('input');
+  inp.className = 'opt-edit-input';
+  inp.value = old;
+  spanEl.replaceWith(inp);
+  inp.focus(); inp.select();
+  const commit = () => {
+    const v = inp.value.trim() || old;
+    const p = db.properties.find(x => x.id === propId);
+    if (p) {
+      const o = p.options.find(x => x.id === optId);
+      if (o) o.name = v;
+      saveDB();
+    }
+    const ns = document.createElement('span');
+    ns.className = 'prop-opt-label';
+    ns.textContent = v;
+    ns.setAttribute('ondblclick', `inlineEditOpt('${propId}','${optId}',this)`);
+    ns.title = 'Clique duplo para renomear';
+    inp.replaceWith(ns);
+    renderSidebar();
+    if (currentId !== null) renderEditorProps();
+  };
+  inp.onblur = commit;
+  inp.onkeydown = e => { if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){inp.value=old;inp.blur();} };
+}
+
+function addOptionToSidebar(propId, input) {
+  const name = input.value.trim();
+  if (!name) return;
+  const p = db.properties.find(x => x.id === propId);
+  if (p && !p.options.find(o => o.name.toLowerCase() === name.toLowerCase())) {
+    p.options.push({ id: uid(), name, colorId: COLORS[p.options.length % COLORS.length].id });
+    saveDB();
+  }
+  input.value = '';
+  renderSidebar();
+  if (currentId !== null) renderEditorProps();
+}
+
+function removeOption(propId, optId) {
+  const p = db.properties.find(x => x.id === propId);
+  if (!p) return;
+  p.options = p.options.filter(o => o.id !== optId);
+  db.entries.forEach(e => {
+    if (e.propertyValues[propId])
+      e.propertyValues[propId] = e.propertyValues[propId].filter(id => id !== optId);
+  });
+  saveDB(); renderSidebar();
+  if (currentId !== null) renderEditorProps();
+}
+
+function promptAddProperty() {
+  document.getElementById('addPropName').value = '';
+  document.getElementById('addPropModalTitle').textContent = 'Nova propriedade';
+  openModal('addPropModal');
+  setTimeout(() => document.getElementById('addPropName').focus(), 60);
+}
+
+function confirmAddProp() {
+  const name = document.getElementById('addPropName').value.trim();
+  if (!name) return;
+  db.properties.push({ id: uid(), name, options: [] });
+  saveDB(); closeModal('addPropModal'); renderSidebar();
+  if (currentId !== null) renderEditorProps();
+  showToast('Propriedade criada');
+}
+
+function deleteProperty(id) {
+  if (!confirm('Excluir esta propriedade e remover de todas as entradas?')) return;
+  db.properties = db.properties.filter(p => p.id !== id);
+  db.entries.forEach(e => delete e.propertyValues[id]);
+  saveDB(); renderSidebar(); renderTable();
+  if (currentId !== null) renderEditorProps();
+}
+
+/* ──────────────────────────────
+   TABLE RENDERING
+────────────────────────────── */
+function renderTableHead() {
+  const cols = [
+    { key: null,        label: '<input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">', cls: 'td-cb', sortable: false },
+    { key: 'title',     label: 'Título',          cls: 'td-title',  sortable: true },
+    { key: '_props',    label: 'Propriedades',    cls: 'td-props',  sortable: false },
+    { key: '_blocks',   label: 'Blocos',          cls: 'td-blk',    sortable: false },
+    { key: 'createdAt', label: 'Criado em',       cls: 'td-date',   sortable: true },
+    { key: 'updatedAt', label: 'Modificado em',   cls: 'td-date',   sortable: true },
+  ];
+  const tr = document.getElementById('tableHead');
+  tr.innerHTML = cols.map(c => {
+    let label = c.label;
+    if (c.sortable) {
+      const arrow = c.key === sortCol
+        ? (sortDir === 'asc' ? ' <span class="sort-arrow">↑</span>' : ' <span class="sort-arrow">↓</span>')
+        : ' <span class="sort-arrow" style="opacity:.2">↕</span>';
+      label += arrow;
+    }
+    const sorted = c.key === sortCol ? ' sorted' : '';
+    const sc = c.sortable ? ' sortable' : '';
+    const click = c.sortable ? `onclick="toggleSort('${c.key}')"` : '';
+    return `<th class="${c.cls}${sorted}${sc}" ${click}>${label}</th>`;
+  }).join('');
+}
+
+function toggleSort(col) {
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = col === 'title' ? 'asc' : 'desc'; }
+  renderTableHead();
+  renderTable();
+}
+
+function getFiltered() {
+  const q   = document.getElementById('searchInput').value.toLowerCase().trim();
+  const df  = document.getElementById('dateFrom').value;
+  const dt  = document.getElementById('dateTo').value;
+
+  let list = db.entries.slice();
+
+  if (q) list = list.filter(e => {
+    if ((e.title||'').toLowerCase().includes(q)) return true;
+    if ((e.description||'').toLowerCase().includes(q)) return true;
+    return (e.blocks||[]).some(b => (b.subtitle+' '+b.content).toLowerCase().includes(q));
+  });
+
+  if (df) list = list.filter(e => (e[dateField]||'') >= df);
+  if (dt) list = list.filter(e => (e[dateField]||'') <= dt+'T23:59:59');
+
+  list.sort((a,b) => {
+    let va = a[sortCol] || '', vb = b[sortCol] || '';
+    if (sortCol === 'title') {
+      va = (va||'').toLowerCase(); vb = (vb||'').toLowerCase();
+    }
+    const r = va < vb ? -1 : va > vb ? 1 : 0;
+    return sortDir === 'asc' ? r : -r;
+  });
+
+  return list;
+}
+
+function renderTable() {
+  const list = getFiltered();
+  const tbody = document.getElementById('tableBody');
+
+  document.getElementById('topbar-count').textContent =
+    db.entries.length + (db.entries.length === 1 ? ' entrada' : ' entradas');
+  document.getElementById('filterInfo').textContent =
+    list.length < db.entries.length ? `${list.length} de ${db.entries.length}` : '';
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <p>Nenhuma entrada encontrada</p>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(e => {
+    const propHtml = db.properties.map(p => {
+      const vals = (e.propertyValues[p.id] || [])
+        .map(oid => p.options.find(o=>o.id===oid))
+        .filter(Boolean)
+        .map(o => {
+          const col = getColor(o.colorId);
+          return `<span class="prop-pill" style="background:${col.bg};color:${col.text}">${esc(o.name)}</span>`;
+        }).join('');
+      return vals;
+    }).join('');
+
+    const bc = (e.blocks||[]).length;
+    const sel = selectedIds.has(e.id) ? ' row-sel' : '';
+
+    return `<tr class="${sel}" onclick="handleRowClick(event,'${e.id}')">
+      <td class="td-cb"><input type="checkbox" data-id="${e.id}" ${selectedIds.has(e.id)?'checked':''} onclick="handleCb(event,this)"></td>
+      <td class="td-title" title="${esc(e.title)}">${esc(e.title)||'<span style="color:var(--text-muted)">Sem título</span>'}</td>
+      <td class="td-props">${propHtml}</td>
+      <td class="td-blk">${bc > 0 ? bc+'↗' : '—'}</td>
+      <td class="td-date">${fmtDate(e.createdAt)}</td>
+      <td class="td-date">${fmtDate(e.updatedAt)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function handleRowClick(ev, id) {
+  if (ev.target.type === 'checkbox') return;
+  openEditor(id);
+}
+
+/* ──────────────────────────────
+   SELECTION / MASS ACTIONS
+────────────────────────────── */
+function handleCb(ev, cb) {
+  ev.stopPropagation();
+  const id = cb.dataset.id;
+  cb.checked ? selectedIds.add(id) : selectedIds.delete(id);
+  updateMassBar();
+  renderTable();
+}
+
+function toggleSelectAll(cb) {
+  const list = getFiltered();
+  list.forEach(e => cb.checked ? selectedIds.add(e.id) : selectedIds.delete(e.id));
+  updateMassBar();
+  renderTable();
+}
+
+function updateMassBar() {
+  const n = selectedIds.size;
+  document.getElementById('massCnt').textContent = n + ' selecionado' + (n!==1?'s':'');
+  document.getElementById('massBar').classList.toggle('visible', n > 0);
+}
+
+function massDelete() {
+  if (!confirm(`Excluir ${selectedIds.size} entradas permanentemente?`)) return;
+  db.entries = db.entries.filter(e => !selectedIds.has(e.id));
+  selectedIds.clear();
+  saveDB(); updateMassBar(); renderTable();
+  showToast('Entradas excluídas');
+}
+
+function massExportJSON() {
+  const sel = { properties: db.properties, entries: db.entries.filter(e=>selectedIds.has(e.id)) };
+  dl(JSON.stringify(sel,null,2), 'base_selecionados_'+dateSlug()+'.json', 'application/json');
+}
+
+function massExportMD() {
+  const sel = db.entries.filter(e=>selectedIds.has(e.id));
+  dl(sel.map(entryToMD).join(''), 'base_selecionados_'+dateSlug()+'.md', 'text/markdown');
+}
+
+/* ──────────────────────────────
+   EDITOR OPEN / CLOSE / DIRTY
+────────────────────────────── */
+function openEditor(id = null) {
+  currentId = id;
+  const e = id ? db.entries.find(x=>x.id===id) : null;
+
+  document.getElementById('epTitle').textContent = e ? 'Editar entrada' : 'Nova entrada';
+  document.getElementById('epTitleInput').value  = e ? (e.title||'') : '';
+  document.getElementById('epDesc').value         = e ? (e.description||'') : '';
+  document.getElementById('epDeleteBtn').style.display = e ? '' : 'none';
+  document.getElementById('epMeta').innerHTML = e
+    ? `<span>Criado: ${fmtDate(e.createdAt)}</span><span>Modificado: ${fmtDate(e.updatedAt)}</span>`
+    : '';
+
+  editBlocks = e
+    ? e.blocks.map(b => ({...b}))
+    : [{ id: uid(), subtitle: '', version: 1, content: '' }];
+  editProps  = e ? JSON.parse(JSON.stringify(e.propertyValues||{})) : {};
+
+  renderEditorProps();
+  renderBlocks();
+
+  document.getElementById('editorPanel').classList.add('open');
+  document.getElementById('editorOverlay').classList.add('visible');
+
+  dirtySnapshot = getEditorSnapshot();
+  setTimeout(() => document.getElementById('epTitleInput').focus(), 80);
+  renderTable();
+}
+
+function getEditorSnapshot() {
+  return JSON.stringify({
+    title: document.getElementById('epTitleInput').value,
+    desc:  document.getElementById('epDesc').value,
+    props: editProps,
+    blocks: editBlocks,
+  });
+}
+
+function isEditorDirty() {
+  return dirtySnapshot !== null && getEditorSnapshot() !== dirtySnapshot;
+}
+
+function requestCloseEditor() {
+  if (isEditorDirty()) { openModal('unsavedModal'); return; }
+  forceCloseEditor();
+}
+
+function forceCloseEditor() {
+  document.getElementById('editorPanel').classList.remove('open');
+  document.getElementById('editorOverlay').classList.remove('visible');
+  currentId = null; dirtySnapshot = null;
+  closeModal('unsavedModal');
+  renderTable();
+}
+
+function saveAndClose() { saveEntry(true); closeModal('unsavedModal'); }
+
+function discardAndClose() { forceCloseEditor(); }
+
+function closeUnsavedModal() { closeModal('unsavedModal'); }
+
+/* ──────────────────────────────
+   EDITOR PROPERTIES
+────────────────────────────── */
+function renderEditorProps() {
+  const area = document.getElementById('epPropsArea');
+  area.innerHTML = '';
+
+  db.properties.forEach(prop => {
+    const div = document.createElement('div');
+    div.className = 'ep-prop-section';
+
+    const selected = editProps[prop.id] || [];
+    let html = `<div class="field-lbl">${esc(prop.name)}</div><div class="ep-prop-opts">`;
+
+    html += `<button class="ep-opt ${selected.length===0?'sel':''}"
+      style="background:var(--surface2);color:var(--text-dim)"
+      onclick="togglePropOpt('${prop.id}','',this,true)">— Nenhum</button>`;
+
+    prop.options.forEach(opt => {
+      const col = getColor(opt.colorId);
+      const isSel = selected.includes(opt.id);
+      html += `<button class="ep-opt ${isSel?'sel':''}"
+        style="background:${col.bg};color:${col.text}"
+        onclick="togglePropOpt('${prop.id}','${opt.id}',this)">${esc(opt.name)}</button>`;
+    });
+    html += '</div>';
+    div.innerHTML = html;
+    area.appendChild(div);
+  });
+}
+
+function togglePropOpt(propId, optId, btn, clearAll = false) {
+  if (!editProps[propId]) editProps[propId] = [];
+  if (clearAll || optId === '') {
+    editProps[propId] = [];
+  } else {
+    const idx = editProps[propId].indexOf(optId);
+    if (idx >= 0) editProps[propId].splice(idx, 1);
+    else editProps[propId].push(optId);
+  }
+  // Update UI without full re-render
+  const section = btn.closest('.ep-prop-section');
+  section.querySelectorAll('.ep-opt').forEach(b => b.classList.remove('sel'));
+  if (editProps[propId].length === 0) {
+    section.querySelector('.ep-opt:first-child').classList.add('sel');
+  } else {
+    section.querySelectorAll('.ep-opt').forEach(b => {
+      const bid = b.getAttribute('onclick').match(/'([^']+)'/g)?.[1]?.replace(/'/g,'');
+      if (bid && editProps[propId].includes(bid)) b.classList.add('sel');
+    });
+  }
+}
+
+/* ──────────────────────────────
+   BLOCKS RENDERING
+────────────────────────────── */
+function renderBlocks() {
+  const container = document.getElementById('blocksContainer');
+  container.innerHTML = '';
+  editBlocks.forEach((b, idx) => {
+    container.appendChild(buildBlockEl(b, idx, editBlocks.length));
+  });
+  document.getElementById('blockCount').textContent =
+    editBlocks.length > 1 ? editBlocks.length + ' blocos' : '';
+}
+
+function buildBlockEl(b, idx, total) {
+  const wrap = document.createElement('div');
+  wrap.className = 'block-item';
+  wrap.dataset.bid = b.id;
+
+  wrap.innerHTML = `
+    <div class="block-head">
+      <div class="block-move">
+        <button class="move-btn" ${idx===0?'disabled':''} onclick="moveBlock('${b.id}',-1)" title="Subir bloco">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="move-btn" ${idx===total-1?'disabled':''} onclick="moveBlock('${b.id}',1)" title="Descer bloco">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <span class="block-num">#${idx+1}</span>
+      <input type="number" class="pos-input" value="${idx+1}" min="1" max="${total}" title="Ir para posição (Enter)"
+        onkeydown="if(event.key==='Enter')jumpBlockTo('${b.id}',this.value,${total})"
+        onclick="this.select()">
+      <div class="sub-wrap">
+        <input class="block-sub-input" placeholder="Subtítulo (ex: Claude)..."
+          value="${esc(b.subtitle)}" data-bid="${b.id}"
+          oninput="syncSub('${b.id}',this.value)"
+          onfocus="showSugDrop('${b.id}')"
+        >
+        <div class="sug-drop" id="sdrop_${b.id}"></div>
+        <div class="ver-hint" id="vhint_${b.id}"></div>
+      </div>
+      <div class="block-ver">
+        <button class="ver-btn" onclick="adjVer('${b.id}',-1)">−</button>
+        <input type="number" class="ver-num" value="${b.version||1}" min="1"
+          onchange="syncVer('${b.id}',parseInt(this.value)||1)">
+        <button class="ver-btn" onclick="adjVer('${b.id}',1)">+</button>
+      </div>
+      <div class="block-actions">
+        <button class="blk-btn" onclick="toggleCollapse('${b.id}')" title="Expandir/Colapsar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        ${total > 1 ? `<button class="blk-btn danger" onclick="removeBlock('${b.id}')" title="Remover bloco">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>` : ''}
+      </div>
+    </div>
+    <div class="block-body">
+      <textarea class="fi fi-ta" data-bid="${b.id}"
+        placeholder="Cole ou escreva aqui..."
+        oninput="syncContent('${b.id}',this.value)"
+      >${esc(b.content)}</textarea>
+    </div>`;
+  return wrap;
+}
+
+function syncSub(bid, val) {
+  const b = editBlocks.find(x=>x.id===bid); if (b) b.subtitle = val;
+  updateVerHint(bid);
+  showSugDrop(bid);
+}
+function syncVer(bid, val) {
+  const b = editBlocks.find(x=>x.id===bid); if (b) b.version = val;
+}
+function syncContent(bid, val) {
+  const b = editBlocks.find(x=>x.id===bid); if (b) b.content = val;
+}
+function adjVer(bid, delta) {
+  const b = editBlocks.find(x=>x.id===bid); if (!b) return;
+  b.version = Math.max(1, (b.version||1) + delta);
+  const inp = document.querySelector(`.ver-num[onchange*="${bid}"]`);
+  if (inp) inp.value = b.version;
+}
+
+function toggleCollapse(bid) {
+  document.querySelector(`.block-item[data-bid="${bid}"]`)?.classList.toggle('collapsed');
+}
+function removeBlock(bid) {
+  editBlocks = editBlocks.filter(b=>b.id!==bid);
+  renderBlocks();
+}
+function addBlock() {
+  const nb = { id: uid(), subtitle: '', version: 1, content: '' };
+  editBlocks.push(nb);
+  renderBlocks();
+  setTimeout(() => {
+    const inp = document.querySelector(`.block-sub-input[data-bid="${nb.id}"]`);
+    if (inp) { inp.focus(); showSugDrop(nb.id); }
+  }, 60);
+}
+
+/* move ± */
+function moveBlock(bid, delta) {
+  const idx = editBlocks.findIndex(b=>b.id===bid);
+  const ni  = idx + delta;
+  if (ni < 0 || ni >= editBlocks.length) return;
+  [editBlocks[idx], editBlocks[ni]] = [editBlocks[ni], editBlocks[idx]];
+  renderBlocks();
+}
+
+/* jump to position */
+function jumpBlockTo(bid, targetStr, total) {
+  const target = Math.max(1, Math.min(total, parseInt(targetStr)||1)) - 1;
+  const cur = editBlocks.findIndex(b=>b.id===bid);
+  if (cur === target) return;
+  const [item] = editBlocks.splice(cur, 1);
+  editBlocks.splice(target, 0, item);
+  renderBlocks();
+}
+
+/* ──────────────────────────────
+   SUGGESTION DROPDOWN (VERSION)
+────────────────────────────── */
+function buildSuggestions(excludeId) {
+  const title = (document.getElementById('epTitleInput').value||'').trim();
+  const vmap = {};
+  if (title) vmap[title.toLowerCase()] = { label: title, max: 0 };
+
+  editBlocks.forEach(b => {
+    if (b.id === excludeId) return;
+    const sub = (b.subtitle||'').trim();
+    if (!sub) return;
+    const key = sub.toLowerCase();
+    const cur = vmap[key];
+    const v = b.version || 1;
+    if (cur) cur.max = Math.max(cur.max, v);
+    else vmap[key] = { label: sub, max: v };
+  });
+
+  const fromEntry = Object.values(vmap).map(o => ({
+    label: `${o.label} v${o.max + 1}`, base: o.label, nextV: o.max + 1
+  }));
+
+  const usedKeys = new Set(Object.keys(vmap));
+  const fromAI = AI_HINTS.filter(a => !usedKeys.has(a.toLowerCase()))
+    .map(a => ({ label: `${a} v1`, base: a, nextV: 1 }));
+
+  return { fromEntry, fromAI };
+}
+
+function showSugDrop(bid) {
+  closeAllSugs();
+  const drop = document.getElementById(`sdrop_${bid}`);
+  if (!drop) return;
+  const { fromEntry, fromAI } = buildSuggestions(bid);
+  let html = '';
+  
+  if (fromEntry.length) {
+    html += `<div class="sug-sec"><div class="sug-lbl">Desta entrada</div>`;
+    fromEntry.forEach(s => {
+      // CORREÇÃO AQUI: Alterado de s.label para s.base no segundo parâmetro da função applySug
+      html += `<div class="sug-item" onclick="applySug('${bid}','${esc(s.base)}',${s.nextV})">${esc(s.label)}</div>`;
+    });
+    html += '</div>';
+  }
+  
+  if (fromAI.length) {
+    html += `<div class="sug-sec"><div class="sug-lbl">IAs comuns</div>`;
+    fromAI.slice(0,7).forEach(s => {
+      html += `<div class="sug-item" onclick="applySug('${bid}','${esc(s.base)}',${s.nextV})">${esc(s.label)}</div>`;
+    });
+    html += '</div>';
+  }
+  
+  if (!html) html = `<div class="sug-empty">Adicione um título para gerar sugestões</div>`;
+  drop.innerHTML = html;
+  drop.classList.add('open');
+}
+
+function applySug(bid, label, ver) {
+  const b = editBlocks.find(x=>x.id===bid); if (!b) return;
+  b.subtitle = label; b.version = ver;
+  const inp = document.querySelector(`.block-sub-input[data-bid="${bid}"]`);
+  const vn  = document.querySelector(`.ver-num[onchange*="${bid}"]`);
+  if (inp) inp.value = label;
+  if (vn)  vn.value  = ver;
+  closeAllSugs();
+  updateVerHint(bid);
+}
+
+function closeAllSugs() {
+  document.querySelectorAll('.sug-drop.open').forEach(d => d.classList.remove('open'));
+}
+
+function updateVerHint(bid) {
+  const hint = document.getElementById(`vhint_${bid}`);
+  const b = editBlocks.find(x=>x.id===bid);
+  if (!hint || !b) return;
+  const prevSame = editBlocks.filter(x=>x.id!==bid && (x.subtitle||'').trim().toLowerCase() === (b.subtitle||'').trim().toLowerCase());
+  if (prevSame.length > 0) {
+    const maxV = Math.max(...prevSame.map(x=>x.version||1));
+    hint.textContent = `↑ mesmo subtítulo existe com v${maxV}`;
+    hint.classList.add('show');
+  } else { hint.classList.remove('show'); }
+}
+
+/* ──────────────────────────────
+   SAVE / DELETE
+────────────────────────────── */
+function saveEntry(skipClose = false) {
+  const title = document.getElementById('epTitleInput').value.trim();
+  const desc  = document.getElementById('epDesc').value;
+  const now   = new Date().toISOString();
+
+  const hasContent = editBlocks.some(b => b.content.trim());
+  if (!title && !hasContent) { showToast('Adicione um título ou conteúdo'); return; }
+
+  if (currentId) {
+    const idx = db.entries.findIndex(e=>e.id===currentId);
+    if (idx >= 0) {
+      db.entries[idx] = {
+        ...db.entries[idx], title, description: desc,
+        propertyValues: JSON.parse(JSON.stringify(editProps)),
+        blocks: editBlocks.map(b=>({...b})),
+        updatedAt: now
+      };
+    }
+    showToast('Entrada atualizada');
+  } else {
+    const e = {
+      id: uid(), title, description: desc,
+      propertyValues: JSON.parse(JSON.stringify(editProps)),
+      blocks: editBlocks.map(b=>({...b})),
+      createdAt: now, updatedAt: now
+    };
+    db.entries.unshift(e);
+    currentId = e.id;
+    document.getElementById('epDeleteBtn').style.display = '';
+    document.getElementById('epTitle').textContent = 'Editar entrada';
+    showToast('Entrada criada');
+  }
+
+  saveDB();
+  dirtySnapshot = getEditorSnapshot(); // reset dirty
+  const saved = db.entries.find(e=>e.id===currentId);
+  if (saved) {
+    document.getElementById('epMeta').innerHTML =
+      `<span>Criado: ${fmtDate(saved.createdAt)}</span><span>Modificado: ${fmtDate(saved.updatedAt)}</span>`;
+  }
+  renderTable();
+  if (!skipClose) { /* stay open */ }
+}
+
+function deleteCurrentEntry() {
+  if (!confirm('Excluir esta entrada? Não pode ser desfeito.')) return;
+  db.entries = db.entries.filter(e=>e.id!==currentId);
+  saveDB(); forceCloseEditor(); showToast('Entrada excluída');
+}
+
+/* ──────────────────────────────
+   DATE FILTER
+────────────────────────────── */
+function toggleDateRow() {
+  const row = document.getElementById('dateRow');
+  const btn = document.getElementById('dateToggleBtn');
+  const open = row.classList.toggle('open');
+  btn.style.color = open ? 'var(--accent)' : '';
+  if (!open) clearDateFilter();
+}
+function clearDateFilter() {
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  renderTable();
+}
+function setDateField(field) {
+  dateField = field;
+  document.getElementById('dfCriado').classList.toggle('active', field==='createdAt');
+  document.getElementById('dfAlterado').classList.toggle('active', field==='updatedAt');
+  renderTable();
+}
+
+/* ──────────────────────────────
+   EXPORT / IMPORT
+────────────────────────────── */
+function entryToMD(e) {
+  let md = `# ${e.title||'Sem título'}\n\n`;
+  if (e.description) md += `> ${e.description}\n\n`;
+
+  db.properties.forEach(p => {
+    const vals = (e.propertyValues[p.id]||[])
+      .map(id=>p.options.find(o=>o.id===id)?.name).filter(Boolean);
+    if (vals.length) md += `**${p.name}:** ${vals.join(', ')}  \n`;
+  });
+  md += `**Criado:** ${fmtDate(e.createdAt)}  \n**Modificado:** ${fmtDate(e.updatedAt)}\n\n`;
+
+  (e.blocks||[]).forEach((b,i) => {
+    if (b.subtitle) md += `### ${b.subtitle} v${b.version||1}\n`;
+    else if ((e.blocks||[]).length>1) md += `### Bloco ${i+1}\n`;
+    md += `\n${b.content||''}\n\n`;
+  });
+  return md + '---\n\n';
+}
+
+function exportAllJSON() {
+  dl(JSON.stringify(db,null,2), 'base_backup_'+dateSlug()+'.json', 'application/json');
+  closeModal('exportModal'); showToast('JSON exportado');
+}
+
+function exportAllMD() {
+  dl(db.entries.map(entryToMD).join(''), 'base_notas_'+dateSlug()+'.md', 'text/markdown');
+  closeModal('exportModal'); showToast('Markdown exportado');
+}
+
+function exportCurrentMD() {
+  const e = db.entries.find(x=>x.id===currentId);
+  if (!e) { showToast('Salve a entrada primeiro'); return; }
+  dl(entryToMD(e), (e.title||'nota')+'.md', 'text/markdown');
+}
+
+function exportCurrentJSON() {
+  const e = db.entries.find(x=>x.id===currentId);
+  if (!e) { showToast('Salve a entrada primeiro'); return; }
+  dl(JSON.stringify({properties:db.properties,entries:[e]},null,2),
+     (e.title||'nota')+'.json', 'application/json');
+}
+
+function openExportModal() { openModal('exportModal'); }
+
+function openImport() { document.getElementById('importFile').click(); }
+
+function handleImport(ev) {
+  const file = ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let data = JSON.parse(e.target.result);
+      if (!data.entries) throw new Error('Formato inválido');
+
+      // Normalize
+      data.properties = (data.properties||[]).map(p => ({
+        ...p, options: (p.options||[]).map(o =>
+          typeof o==='string' ? {id:uid(),name:o,colorId:randColor()} : o)
+      }));
+      data.entries = data.entries.map(e2 => ({
+        id: e2.id||uid(), title: e2.title||'', description: e2.description||'',
+        propertyValues: e2.propertyValues||{},
+        blocks: (e2.blocks||[{id:uid(),subtitle:'',version:1,content:e2.content||''}])
+                .map(b=>({id:b.id||uid(),subtitle:b.subtitle||'',version:b.version||1,content:b.content||''})),
+        createdAt: e2.createdAt, updatedAt: e2.updatedAt
+      }));
+
+      const merge = confirm(`Importar ${data.entries.length} entrada(s)?\n\nOK = Mesclar\nCancelar = Substituir tudo`);
+      if (merge) {
+        const existIds = new Set(db.entries.map(e=>e.id));
+        const newE = data.entries.filter(e=>!existIds.has(e.id));
+        db.entries = [...db.entries, ...newE];
+        const existPids = new Set(db.properties.map(p=>p.id));
+        (data.properties||[]).filter(p=>!existPids.has(p.id)).forEach(p=>db.properties.push(p));
+        showToast(`${newE.length} entradas importadas (mesclado)`);
+      } else {
+        db = data;
+        showToast(`${data.entries.length} entradas importadas`);
+      }
+      saveDB(); renderSidebar(); renderTableHead(); renderTable();
+    } catch(err) { alert('Erro ao importar: '+err.message); }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+/* ──────────────────────────────
+   MODALS HELPER
+────────────────────────────── */
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+['exportModal','addPropModal','unsavedModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target === document.getElementById(id)) {
+      if (id === 'unsavedModal') return; // Don't close on overlay for unsaved
+      closeModal(id);
+    }
+  });
+});
+
+/* ──────────────────────────────
+   KEYBOARD SHORTCUTS
+────────────────────────────── */
+document.addEventListener('keydown', e => {
+  // P = toggle sidebar (only when editor not focused)
+  if (e.key === 'p' || e.key === 'P') {
+    const active = document.activeElement;
+    if (!active || (active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA')) {
+      e.preventDefault();
+      toggleSidebar();
+      return;
+    }
+  }
+  if ((e.ctrlKey||e.metaKey) && e.key === 'n') { e.preventDefault(); openEditor(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === 's') {
+    if (document.getElementById('editorPanel').classList.contains('open')) {
+      e.preventDefault(); saveEntry();
+    }
+  }
+  if (e.key === 'Escape') {
+    closeAllSugs();
+    if (document.querySelector('.modal-bg.open:not(#unsavedModal)')) {
+      document.querySelectorAll('.modal-bg.open:not(#unsavedModal)').forEach(m=>m.classList.remove('open'));
+      return;
+    }
+    if (document.getElementById('unsavedModal').classList.contains('open')) return;
+    if (document.getElementById('editorPanel').classList.contains('open')) {
+      requestCloseEditor(); return;
+    }
+  }
+});
+
+document.addEventListener('mousedown', e => {
+  if (!e.target.closest('.sub-wrap') && !e.target.closest('.blk-btn')) closeAllSugs();
+});
+
+/* ──────────────────────────────
+   INIT
+────────────────────────────── */
+db = loadDB();
+renderTableHead();
+renderSidebar();
+renderTable();
+</script>
+</body>
+</html>
